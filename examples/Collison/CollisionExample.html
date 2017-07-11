@@ -1,0 +1,94 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <script src="../../libraries/2DCollisionDetection.js"></script>
+</head>
+<body>
+    <canvas id="example" height="400" width="400"/>
+    <script>
+        //BIG TODO!
+        //Clean this up and possibly create a cool little libary
+        //Also add the ablity for the user to modify some of the hard set settings.
+
+        var shapes = new Array();
+        var maxitems = 500;
+        var maxsquare = 10;
+        var canvas = document.getElementById("example");
+        var canvascontext = canvas.getContext("2d");
+        var nonCollidColor = "#000000";
+        var CollidColor = "#FF0000";
+        var width = canvas.width;
+        var height = canvas.height;
+        var maxVelocity = 10;
+        var collisond = new TwoDCollisonDetection();
+        var drawing = false;
+        for (var itemloop = 0;itemloop < maxitems; itemloop++)
+        {   
+            var whichway = 1;
+            var x = Math.floor((Math.random() * width) + 1);
+            var y = Math.floor((Math.random() * height) + 1);
+            var sqwidth = Math.floor((Math.random() * maxsquare) + 1);
+            var xspeed = Math.floor((Math.random() * maxVelocity) + 1) * whichway;
+            var yspeed = Math.floor((Math.random() * maxVelocity) + 1) * whichway;
+            whichway = whichway * -1;
+
+            var newItem = {
+                "x": x,
+                "y": y,
+                "width": sqwidth,
+                "height": sqwidth,
+                "xspeed": xspeed,
+                "yspeed": yspeed
+            }
+        shapes.push(newItem);
+        collisond.Insert(newItem);
+        }
+
+        function timer()
+        {
+            if (!drawing)
+                moveobjects();
+            if (!drawing)
+                draw();
+        }
+
+        function moveobjects()
+        {   
+            collisond.Clear();
+            for (var index = 0; index < shapes.length; index++) {
+                var shape = shapes[index];
+                if (shape.x + shape.xspeed > width || shape.x + shape.xspeed < 0)
+                    shape.xspeed  = shape.xspeed * -1;
+                if (shape.y + shape.yspeed > height || shape.y + shape.yspeed < 0)
+                    shape.yspeed = shape.yspeed * -1;
+
+                shape.x = shape.x + shape.xspeed;
+                shape.y = shape.y + shape.yspeed;
+                shapes[index] = shape;
+                collisond.Insert(shape);
+            };
+        }
+
+        function draw()
+        {
+            drawing = true;
+            canvascontext.clearRect(0, 0, width, height);
+
+            for (var index = 0; index < shapes.length; index++)
+            {
+                var shape = shapes[index];
+                if (collisond.GetCollisions(shape).length > 1)
+                    canvascontext.fillStyle = CollidColor;
+                else
+                    canvascontext.fillStyle = nonCollidColor;
+
+                canvascontext.fillRect(shape.x, shape.y, shape.width, shape.height);
+            }
+            drawing = false;
+        }
+        setInterval(timer,24)
+    </script>
+</body>
+</html>
