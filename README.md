@@ -1,2 +1,2 @@
 # So-Fly
-Currently a few javascript utlitites.
+Currently a few javascript utilities.
