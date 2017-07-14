@@ -3,17 +3,19 @@
 <head>
     <meta charset="utf-8" />
     <title></title>
-    <script src="../../libraries/2DCollisionDetection.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/prototype/1.7.2.0/prototype.js"></script>
+    <script src="../../libraries/QuadTreeES6Conversion.js"></script>
+    
 </head>
-<body>
-    <canvas id="example" height="400" width="400"/>
+<body onload ="StartUp()">
+    <canvas id="example" height="800" width="800"/>
     <script>
         //BIG TODO!
         //Clean this up and possibly create a cool little libary
         //Also add the ablity for the user to modify some of the hard set settings.
 
         var shapes = new Array();
-        var maxitems = 500;
+        var maxitems =1000;
         var maxsquare = 10;
         var canvas = document.getElementById("example");
         var canvascontext = canvas.getContext("2d");
@@ -21,37 +23,50 @@
         var CollidColor = "#FF0000";
         var width = canvas.width;
         var height = canvas.height;
-        var maxVelocity = 10;
-        var collisond = new TwoDCollisonDetection();
-        var drawing = false;
-        for (var itemloop = 0;itemloop < maxitems; itemloop++)
-        {   
-            var whichway = 1;
-            var x = Math.floor((Math.random() * width) + 1);
-            var y = Math.floor((Math.random() * height) + 1);
-            var sqwidth = Math.floor((Math.random() * maxsquare) + 1);
-            var xspeed = Math.floor((Math.random() * maxVelocity) + 1) * whichway;
-            var yspeed = Math.floor((Math.random() * maxVelocity) + 1) * whichway;
-            whichway = whichway * -1;
+        var maxVelocity = 2;
+        let collisond;
+        var whichway = 1;
+        function StartUp()
+        {
 
-            var newItem = {
-                "x": x,
-                "y": y,
-                "width": sqwidth,
-                "height": sqwidth,
-                "xspeed": xspeed,
-                "yspeed": yspeed
+
+            collisond = new QuadTree({
+                "x": 0,
+                "y": 0,
+                "width": 800,
+                "height": 800
+            }, 40, 20);
+            var drawing = false;
+            for (var itemloop = 0; itemloop < maxitems; itemloop++) {
+
+                var x = Math.floor((Math.random() * width) + 1);
+                var y = Math.floor((Math.random() * height) + 1);
+                var sqwidth = Math.floor((Math.random() * maxsquare) + 3);
+                var xspeed = Math.floor((Math.random() * maxVelocity) + 1) * whichway;
+                var yspeed = Math.floor((Math.random() * maxVelocity) + 1) * whichway;
+                
+
+                var newItem = {
+                    "x": x,
+                    "y": y,
+                    "width": sqwidth,
+                    "height": sqwidth,
+                    "xspeed": xspeed,
+                    "yspeed": yspeed
+                }
+                whichway = whichway * -1;
+
+                shapes.push(newItem);
             }
-        shapes.push(newItem);
-        collisond.Insert(newItem);
-        }
+            collisond.Insert(shapes);
+
+        
 
         function timer()
         {
-            if (!drawing)
                 moveobjects();
-            if (!drawing)
                 draw();
+                setTimeout(timer, 1);
         }
 
         function moveobjects()
@@ -67,28 +82,37 @@
                 shape.x = shape.x + shape.xspeed;
                 shape.y = shape.y + shape.yspeed;
                 shapes[index] = shape;
-                collisond.Insert(shape);
             };
+
+            //Insert into the collison detection lib.
+            collisond.Insert(shapes);
         }
 
         function draw()
         {
-            drawing = true;
             canvascontext.clearRect(0, 0, width, height);
+            
+            shapes.forEach(i => {
+                let collides = collisond.GetCollides(i);
+                canvascontext.fillStyle = nonCollidColor;
 
-            for (var index = 0; index < shapes.length; index++)
-            {
-                var shape = shapes[index];
-                if (collisond.GetCollisions(shape).length > 1)
-                    canvascontext.fillStyle = CollidColor;
-                else
-                    canvascontext.fillStyle = nonCollidColor;
+                if (collides.length > 0)
+                    collides.forEach(c => {
+                        if (i != c && (i.x < c.x + i.width && i.x + i.width > c.x && i.y < c.y + c.height && i.y + i.height > c.y))
+                            {
+                            canvascontext.fillStyle = CollidColor;
+                            return;
+                        }
+                    })
+                    
 
-                canvascontext.fillRect(shape.x, shape.y, shape.width, shape.height);
-            }
-            drawing = false;
+                canvascontext.fillRect(i.x, i.y, i.width, i.height);
+            });
+                
         }
-        setInterval(timer,24)
+
+        timer();
+        }
     </script>
 </body>
 </html>
