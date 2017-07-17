@@ -13,8 +13,7 @@
         //BIG TODO!
         //Clean this up and possibly create a cool little libary
         //Also add the ablity for the user to modify some of the hard set settings.
-
-        var shapes = new Array();
+        var shapes = [];
         var maxitems =1000;
         var maxsquare = 10;
         var canvas = document.getElementById("example");
@@ -91,7 +90,7 @@
         function draw()
         {
             canvascontext.clearRect(0, 0, width, height);
-            
+            //console.log(collisond.getAllContent());
             shapes.forEach(i => {
                 let collides = collisond.GetCollides(i);
                 canvascontext.fillStyle = nonCollidColor;

@@ -7,113 +7,155 @@ https://github.com/mikechambers/ExamplesByMesh/tree/master/JavaScript/QuadTree
 
 'use strict';
 
+//Use the new constant keyword to set the array indexs for the corners.
 const TOP_LEFT = 0
 const TOP_RIGHT = 1
 const BOTTOM_LEFT = 2
 const BOTTOM_RIGHT = 3
 
 
+//Using the class constucter as well as the default paramater options
 class Node {
     constructor(bounds, depth = 0, maxDepth = 4, maxChildren = 4) {
-        this.bounds = bounds
-        this.children = []
-        this.nodes = []
-        this.maxChildren = maxChildren
-        this.maxDepth = maxDepth
-        this.depth = depth
+        this.bounds = bounds;
+        this.children = [];
+        this.nodes = [];
+        this.maxChildren = maxChildren;
+        this.maxDepth = maxDepth;
+        this.depth = depth;
     }
+    //Insert, requires an object that has an x and y property
     Insert(item) {
         if (this.nodes.length) {
+            //Find which node we need to look in
             let index = this.NodeFindIndex(item);
+            //Call the insert again, using the newly founded node.
             this.nodes[index].Insert(item);
             return;
         }
 
+        //Since there were no nodes push the item to this node.
         this.children.push(item);
 
         let len = this.children.length;
+        //If we are over the maxchildren and still have room in our depth. We will need to sub divide the node.
         if (!(this.depth >= this.maxDepth) &&
             len > this.maxChildren) {
 
-            this.Nodesubdivide();
+            //Get the binding options for the new nodes.
+            //I made this a function that returns an list of new parameters to better try and suppor the extends on the
+            //bound node
+            let newnodes = this.Nodesubdivide();
+            //Loop though each of the new options and create a new nodes.
+            newnodes.forEach(i => this.nodes[i.corner] = new Node(i.bounds, i.depth, i.maxDepth, i.maxChildren));
 
             let i;
             for (i = 0; i < len; i++) {
                 this.Insert(this.children[i]);
             }
 
+            //remove the children as we are now a node that points to other nodes
             this.children.length = 0;
         }
     }
-    Nodesubdivide() {
-        let depth = this._depth + 1;
 
+    //Need to figure a way to the subdivide needs to eather make a node or a boundnode to be stored in nodes
+    Nodesubdivide() {
+        let depth = this.depth + 1;
+        let newnodessettings = [];
         let bx = this.bounds.x;
         let by = this.bounds.y;
 
-        //floor the values
-        let b_w_h = (this.bounds.width / 2); //todo: Math.floor?
+        //We need at least a few numbers to make the subdivide easy
+        let b_w_h = (this.bounds.width / 2);
         let b_h_h = (this.bounds.height / 2);
         let bx_b_w_h = bx + b_w_h;
         let by_b_h_h = by + b_h_h;
+        //bx,by_____bx_b_w_h,by__________
+        //|              |               |
+        //|              |               |
+        //bx,by_b_h_h__bx_b_w_h,by_b_h_h_|
+        //|              |               |
+        //|______________|_______________|
+
 
         //top left
-        this.nodes[TOP_LEFT] = new Node({
-            x: bx,
-            y: by,
-            width: b_w_h,
-            height: b_h_h
-        },
-            depth, this._maxDepth, this._maxChildren);
+        newnodessettings.push({
+            corner: TOP_LEFT,
+            bounds: {
+                x: bx,
+                y: by,
+                width: b_w_h,
+                height: b_h_h
+            },
+            depth: depth,
+            maxDepth: this.maxDepth,
+            maxChildren: this.maxChildren
+        });
 
         //top right
-        this.nodes[TOP_RIGHT] = new Node({
-            x: bx_b_w_h,
-            y: by,
-            width: b_w_h,
-            height: b_h_h
-        },
-            depth, this._maxDepth, this._maxChildren);
+        newnodessettings.push({
+            corner: TOP_RIGHT,
+            bounds: {
+                x: bx_b_w_h,
+                y: by,
+                width: b_w_h,
+                height: b_h_h
+            },
+            depth: depth,
+            maxDepth: this.maxDepth,
+            maxChildren: this.maxChildren
+        });
 
         //bottom left
-        this.nodes[BOTTOM_LEFT] = new Node({
-            x: bx,
-            y: by_b_h_h,
-            width: b_w_h,
-            height: b_h_h
-        },
-            depth, this._maxDepth, this._maxChildren);
+        newnodessettings.push({
+            corner: BOTTOM_LEFT,
+            bounds: {
+                x: bx,
+                y: by_b_h_h,
+                width: b_w_h,
+                height: b_h_h
+            },
+            depth: depth,
+            maxDepth: this.maxDepth,
+            maxChildren: this.maxChildren
+        });
 
 
         //bottom right
-        this.nodes[BOTTOM_RIGHT] = new Node({
-            x: bx_b_w_h,
-            y: by_b_h_h,
-            width: b_w_h,
-            height: b_h_h
-        },
-            depth, this._maxDepth, this._maxChildren);
+        newnodessettings.push({
+            corner: BOTTOM_RIGHT,
+            bounds: {
+                x: bx_b_w_h,
+                y: by_b_h_h,
+                width: b_w_h,
+                height: b_h_h
+            },
+            depth: depth,
+            maxDepth: this.maxDepth,
+            maxChildren: this.maxChildren
+        });
+
+
+        return newnodessettings;
     }
     NodeFindIndex(item) {
         let b = this.bounds;
-        let left = (item.x > b.x + b.width / 2) ? false : true;
-        let top = (item.y > b.y + b.height / 2) ? false : true;
+        //Check the X if X is greater then the mid point right, else left
+        let left = !(item.x > b.x + b.width / 2);
+        //check the Y if Y is greater then the mid point then bottem else top
+        let top = !(item.y > b.y + b.height / 2);
 
-        //top left
+        //Use the checks above to direct our path.
         var index = TOP_LEFT;
         if (left) {
-            //left side
             if (!top) {
-                //bottom left
                 index = BOTTOM_LEFT;
             }
         } else {
-            //right side
             if (top) {
-                //top right
                 index = TOP_RIGHT;
             } else {
-                //bottom right
                 index = BOTTOM_RIGHT;
             }
         }
@@ -122,11 +164,13 @@ class Node {
     }
     Retrieve(item) {
         if (this.nodes.length) {
+            //if there are nodes we need to check to which node we should look in.
             let index = this.NodeFindIndex(item);
 
             return this.nodes[index].Retrieve(item);
         }
 
+        //return children, if we are a node this will return nothing.
         return this.children;
     }
     Clear() {
@@ -140,25 +184,26 @@ class Node {
     }
 }
 
+//BoundNode
 class BoundNode extends Node {
     constructor(bounds, depth, maxDepth = 4, maxChildren = 4) {
-        super(bounds, depth, maxChildren, maxDepth)
+        super(bounds, depth, maxDepth, maxChildren )
         this.stuckChildren = []
     }
     Insert(item) {
         if (this.nodes.length) {
-            let index = super.NodeFindIndex(item)
-            let node = this.nodes[index]
+            let index = super.NodeFindIndex(item);
+            let node = this.nodes[index];
 
             if (item.x >= node.bounds.x &&
                 item.x + item.width <= node.bounds.x + node.bounds.width &&
                 item.y >= node.bounds.y &&
                 item.y + item.height <= node.bounds.y + node.bounds.height) {
 
-                this.nodes[index].Insert(item)
+                this.nodes[index].Insert(item);
 
             } else {
-                this.stuckChildren.push(item)
+                this.stuckChildren.push(item);
             }
 
             return
@@ -166,18 +211,60 @@ class BoundNode extends Node {
 
         this.children.push(item)
 
-        let len = this.children.length
+        let len = this.children.length;
 
         if (!(this.depth >= this.maxDepth) &&
             len > this.maxChildren) {
-            super.Nodesubdivide()
+            let newnodeoptions = super.Nodesubdivide();
+            newnodeoptions.forEach(i => this.nodes[i.corner] = new BoundNode(i.bounds, i.depth, i.maxDepth, i.maxChildren));
 
-            this.children.forEach(i => this.Insert(i))
+            this.children.forEach(i => this.Insert(i));
 
-            this.children.length = 0
+            this.children.length = 0;
         }
     }
-    Retrieve(item) { return super.Retrieve(item) }
+    Retrieve(item) {
+        let out = [];
+        if (this.nodes.length) {
+            let index = super.NodeFindIndex(item);
+            let node = this.nodes[index];
+
+            if (item.x >= node.bounds.x &&
+                item.x + item.width <= node.bounds.x + node.bounds.width &&
+                item.y >= node.bounds.y &&
+                item.y + item.height <= node.bounds.y + node.bounds.height) {
+
+                out.push.apply(out, this.nodes[index].Retrieve(item));
+            } else {
+
+                if (item.x <= this.nodes[TOP_RIGHT].bounds.x) {
+                    if (item.y <= this.nodes[BOTTOM_LEFT].bounds.y) {
+                        out.push.apply(out,this.nodes[TOP_LEFT].getAllContent());
+                    }
+
+                    if (item.y + item.height > this.nodes[BOTTOM_LEFT].bounds.y) {
+                        out.push.apply(out,this.nodes[BOTTOM_LEFT].getAllContent());
+                    }
+                }
+
+                if (item.x + item.width > this.nodes[TOP_RIGHT].bounds.x) {
+                    if (item.y <= this.nodes[BOTTOM_RIGHT].bounds.y) {
+                        out.push.apply(out,this.nodes[TOP_RIGHT].getAllContent());
+                    }
+
+                    if (item.y + item.height > this.nodes[BOTTOM_RIGHT].bounds.y) {
+                        out.push.apply(out,this.nodes[BOTTOM_RIGHT].getAllContent());
+                    }
+                }
+
+
+            }
+        }
+
+        out.push.apply(out, this.stuckChildren);
+        out.push.apply(out, this.children);
+        return out;
+    }
     Clear() {
         this.stuckChildren.length = 0
         this.children.length = 0
@@ -195,9 +282,9 @@ class BoundNode extends Node {
     getAllContent() {
         let out = [];
         if (this.nodes.length) {
-            nodes.forEach(i => i.getAllContent())
+            this.nodes.forEach(i => out.push(i.getAllContent()))
         }
-        out.push.apply(out, this._stuckChildren)
+        out.push.apply(out, this.stuckChildren)
         out.push.apply(out, this.children)
         return out
     }
@@ -211,14 +298,15 @@ class QuadTree {
         if (item instanceof Array)
             item.forEach(i => { this.root.Insert(i) })
         else
-            this.root.Insert(item)
+            this.root.Insert(item);
     }
     Clear() {
-        this.root.Clear()
+        this.root.Clear();
     }
     GetCollides(item) {
-        let items = this.root.Retrieve(item)
-        return items
+        let items = this.root.Retrieve(item);
+        return items;
     }
+    getAllContent() { return this.root.getAllContent();}
 }
 
