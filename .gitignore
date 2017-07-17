@@ -2,9 +2,9 @@
 # This .gitignore file was automatically created by Microsoft(R) Visual Studio.
 ################################################################################
 
-/.vs/config
+/.vs/config/applicationhost.config
+/.vs/So-Fly/v15/.suo
+/.vs/ProjectSettings.json
+/.vs/slnx.sqlite
+/.vs/VSWorkspaceState.json
 /.vs
-/.gitignore
-/Web.config
-/Web.config
-/Web.config
