@@ -58,8 +58,6 @@ class Node {
             this.children.length = 0;
         }
     }
-
-    //Need to figure a way to the subdivide needs to eather make a node or a boundnode to be stored in nodes
     Nodesubdivide() {
         let depth = this.depth + 1;
         let newnodessettings = [];

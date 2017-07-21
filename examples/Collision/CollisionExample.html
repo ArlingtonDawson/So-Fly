@@ -1,0 +1,22 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <script src="https://ajax.googleapis.com/ajax/libs/prototype/1.7.2.0/prototype.js"></script>
+    <script src="../../libraries/RStarAttempt.js"></script>
+    <script src="../Collision/script/easeljs.js"></script>
+    <script src="../Collision/script/collision.js"></script>
+    
+</head>
+<body onload ="StartUp()">
+    <canvas id="example" height="800" width="800"/>
+    <script>
+        var Collision;
+        function StartUp() {
+            let canvas = document.getElementById("example");
+            Collision = new CollisionDemo(canvas);
+        }
+    </script>
+</body>
+</html>

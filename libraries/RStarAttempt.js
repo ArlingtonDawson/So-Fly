@@ -2,166 +2,64 @@
 (function (window) {
     'use strict';
 
-    function TwoDCollisonDetection(minchilditems, maxchilditems) {
-        var minchilditems = minchilditems;
-        var maxchilditems = maxchilditems;
-        var tree;
-
-        var insert = function (item) {
-            if ("undefined" === typeof tree)
-                tree = new RNode(item,null);
-
-            tree.Insert(item, maxchilditems);
-
-        }
-
-        this.Insert = function (item) {
-            if (item instanceof Array)
+    //Constant functions used for some calculations to help us determain node placement
+     var RHelperCalculations = {
+        Area(axis) {
+            let outvalue = 1;
+            //for each axis in the array minus the max from the min to get its length. Next times it by
+            //the previous value, hince the start at 1.
+            axis.forEach(a => (a.max - a.min) * outvalue);
+            return outvalue;
+         },
+         //requires two axes
+         //TODO:Add checks to avoid assumption that the Axes past are pre sorted and there is an overlap
+        Overlap(axis1, axis2) {
+            let axes = [];
+            for (let index = 0; index < axis1.length; index++)
             {
-                var length = item.length;
-                for (var index = 0; index < length; index++)
-                {
-                    insert(item[index]);
-                }
+                axes.push(new Axis(axis2[index].Min, axis1[index].Max));
             }
-            else {
-                insert(item);
-            }
-        }
+            return axes;
+        },
+        //Is this just distance from center to point? Not sure.
+        DistanceFromPoint() {
 
-        this.GetTree = function ()
-        {
-            return tree;
         }
     }
 
-    function RNode(itembounds,creator) {
-        var parent = creator;
-        var nodes = [];
-        var bounds = {
-            "minx": itembounds.minx,
-            "miny": itembounds.miny,
-            "maxy": itembounds.maxy,
-            "maxx": itembounds.maxx
-        };
-        var hasItems = true;
-        var adjustbounds = function (inbounds) {
-            comparebounds("x", inbounds);
-            comparebounds("y", inbounds);
-        }
-
-        this.GetNodes = function(){}
-        var getdistancefrompoint = function (x, y, checkbounds)
-        {
-            var distance = 0.0;
-            var totaldistance = 0.0;
-
-            distance = (x + checkbounds.minx + checkbounds.maxx) / 2.0;
-            totaldistance += distance * distance;
-
-            distance = (y + checkbounds.miny + checkbounds.maxy) / 2.0;
-            totaldistance += distance * distance;
-
-
-            return totaldistance;
-        }
-
-        var comparebounds = function (compareproperty, inbounds) {
-            if (inbounds["min" + compareproperty] < bounds["min" + compareproperty])
-                bounds["min" + compareproperty] = inbounds["min" + compareproperty];
-
-            if (inbounds["max" + compareproperty] > bounds["max" + compareproperty])
-                bounds["max" + compareproperty] = inbounds["max" + compareproperty];
-        }
-
-        this.Insert = function (item, maxitems) {
-            adjustbounds(item);
-            if (hasItems) {
-                var added = false;
-                for (var i = 0; i < nodes.length; i++)
-                    if (getdistancefrompoint(bounds.minx, bounds.miny, item) < getdistancefrompoint(bounds.minx, bounds.miny, nodes[i].GetBounds()))
-                    {
-                        nodes.splice(i, 0, new RNode(item));
-                        added = true;
-                        break;
-                    }
-
-                if (!added)
-                    nodes.push(new RNode(item));
-            }
-            else {
-                var selectednode = 0;
-                var distance = nodes[0].GetDistance(item);
-                for (var i = 1; i < nodes.length; i++) {
-                    var testdistance = nodes[i].GetDistance(item);
-                    if (testdistance < distance) {
-                        distance = testdistance;
-                        selectednode = i;
-                    }
-                }
-
-                nodes[selectednode].Insert(item);
-            }
-
-            if (nodes.length > maxitems)
-            {
-                
-                if (parent == null)
-                {
-                    hasItems = false;
-                    
-
-                    var newNodeA = new RNode(nodes[0].GetBounds()); 
-                    var newNodeB = new RNode(nodes[nodes.length - 1].GetBounds());
-
-                    nodes.pop();
-                    nodes.shift();
-
-                    var front = false;
-                    var templength = nodes.length;
-
-                    for (var i = 0; i < templength; i++)
-                    {
-                        if (front)
-                        {
-                            newNodeA.Insert(nodes[0].GetBounds());
-                            nodes.shift();
-
-                        }
-                        else {
-                            newNodeB.Insert(nodes[nodes.length - 1].GetBounds());
-                            nodes.pop();
-                        }
-
-                        front = !front;
-                    }
-                    nodes = [];
-                    nodes.push(newNodeA);
-                    nodes.push(newNodeB);
-
-                }
-            }
-        }
-
-        this.GetDistance = function (checkbounds) {
-            var distance = 0.0;
-            var totaldistance = 0.0;
-
-            distance = (bounds.minx + bounds.maxx + checkbounds.minx + checkbounds.maxx) / 2.0;
-            totaldistance += distance * distance;
-
-            distance = (bounds.miny + bounds.maxy + checkbounds.miny + checkbounds.maxy) / 2.0;
-            totaldistance += distance * distance;
-
-             
-            return totaldistance;
-        }
-        this.GetBounds = function () { return bounds; }
+    //Axis class. Used in the majority of the calculations for the algorithms.
+    //Min=start of a line
+    //Max=End of a line.
+    function Axis(min, max) {
+        this.Min = min;
+        this.Max = max;
     }
-    function RLeaf() { }
-    function RBindingBox() { }
-    function DAxis() { }
+    //This is the home of the objects we wish to store.
+    //Requires an axis array, used for caculations and the object we are storing
+    function Leaf (axis,item){
+            this.Axis = axis;
+            this.Item = item;
+    }
 
-    window.TwoDCollisonDetection = TwoDCollisonDetection;
-    window.TwoDCollisonDetection.RNode = RNode;
+    //This is the base node objec
+    function Node (axis, item){
+            this.Axis = axis;
+            this.Nodes = [];
+            this.Leafs = [];
+            this.parentcallback = [];
+
+            let hasleaves = false;
+
+            this.Insert = function (item) {
+                //Check if this is an end node or node that has leaves. If it does we add.
+                //Check to see if there are more items in this node then our maxium if so we have to split the node.
+                //I figured this is where the parentcallbacks could come in handy. If there is no more room on this depth we will need to split to a new depth.
+
+
+                //If not we need to find where we need to go. To do that we will compare the item axes with the child node axes.
+                //If the item falls between two nodes we will have to find which one is the best to fill it in. Note:Add these test calcuations to
+                //RHelperCalculations
+            }
+    }
+
 })(window);
