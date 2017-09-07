@@ -2,6 +2,7 @@
 let maxSize = 20;
 let minSize = 1;
 let maxV = 10;
+let CollisonDetect = new BinaryCollison();
 
 //CollisionShape OBJECT
 function CollisionShape(x,y,height,width,xv,xy) {
@@ -14,7 +15,23 @@ function CollisionShape(x,y,height,width,xv,xy) {
     this.deltay = xy;
 
     this.IsCollided = ()=>{
+        let results = CollisonDetect.GetItems(this);
+        let collid = false;
+        if (results == null)
+            return collid;
 
+        results.forEach((i) => {
+            if (i !== this){
+                if (i.x < this.x + this.width && i.x + i.width > this.x &&
+                    i.y < this.y + this.height && i.y + i.height > this.y)
+                {
+                    collid = true;
+                }
+                    
+            }
+        });
+
+        return collid;
     }
     
 
@@ -22,7 +39,11 @@ function CollisionShape(x,y,height,width,xv,xy) {
     {
         let g = this.graphics;
         g.clear();
-        g.beginFill("#ff0000").drawRect(this.x, this.y, height, width);
+
+        if (this.IsCollided())
+            g.beginFill("#ff0000").drawRect(this.x, this.y, height, width);
+        else
+            g.beginFill("#00ff00").drawRect(this.x, this.y, height, width);
     }
     this.Update = function(bounds)
     {
@@ -34,7 +55,6 @@ function CollisionShape(x,y,height,width,xv,xy) {
 
         this.x = this.x + this.deltax;
         this.y = this.y + this.deltay;
-        this.Draw.call(this);
     }
 }
 
@@ -43,6 +63,7 @@ CollisionShape.prototype = new createjs.Shape();
 
 function CollisionDemo(canvas)
 {
+    
     let pause = false;
     let shapes = [];
     let bounds = {
@@ -79,6 +100,8 @@ function CollisionDemo(canvas)
     //This is the loop, we need to update each shape then render to the canvas.
     let update = () => {
         shapes.forEach(i => i.Update(bounds));
+        CollisonDetect.Insert(shapes);
+        shapes.forEach(i => i.Draw());
         stage.update();
     }
 
@@ -86,7 +109,7 @@ function CollisionDemo(canvas)
     //Set the stage to our canvas
     let stage = new createjs.Stage(canvas);
     //Create some shapes
-    this.CreateShape(100);
+    this.CreateShape(500);
     stage.update();
     //Set the FPS to 24 frames. Make this an option in the future.
     createjs.Ticker.setFPS(24);
